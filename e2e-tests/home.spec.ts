@@ -19,6 +19,59 @@ test.describe('Open roles listing', () => {
         await expect(page.getByTestId('role-location')).toHaveCount(expectedRoleCount);
     });
 
+    test('filters roles by department', async ({ page }) => {
+        await page.goto('/');
+        await page.getByTestId('department-filter').selectOption('Finance');
+
+        const visibleCards = page.locator('[data-testid="role-card"]:visible');
+        await expect(visibleCards).toHaveCount(2);
+        await expect(visibleCards.filter({ has: page.getByRole('heading', { name: 'Financial Analyst' }) }))
+            .toHaveCount(1);
+        await expect(visibleCards.filter({
+            has: page.getByRole('heading', { name: 'Financial Reconciliation Specialist' }),
+        })).toHaveCount(1);
+    });
+
+    test('filters roles by location', async ({ page }) => {
+        await page.goto('/');
+        await page.getByTestId('location-filter').selectOption('Woodinville, WA, USA');
+
+        await expect(page.locator('[data-testid="role-card"]:visible')).toHaveCount(3);
+    });
+
+    test('combines department and location filters', async ({ page }) => {
+        await page.goto('/');
+        await page.getByTestId('department-filter').selectOption('Finance');
+        await page.getByTestId('location-filter').selectOption('Woodinville, WA, USA');
+
+        const visibleCards = page.locator('[data-testid="role-card"]:visible');
+        await expect(visibleCards).toHaveCount(1);
+        await expect(visibleCards.getByTestId('role-title')).toHaveText('Financial Analyst');
+    });
+
+    test('resets filters to show all roles', async ({ page }) => {
+        await page.goto('/');
+        await page.getByTestId('department-filter').selectOption('Finance');
+        await page.getByTestId('location-filter').selectOption('Woodinville, WA, USA');
+        await page.getByTestId('role-filter-reset').click();
+
+        await expect(page.getByTestId('department-filter')).toHaveValue('');
+        await expect(page.getByTestId('location-filter')).toHaveValue('');
+        await expect(page.locator('[data-testid="role-card"]:visible')).toHaveCount(expectedRoleCount);
+    });
+
+    test('shows an empty state when filters match no roles', async ({ page }) => {
+        await page.goto('/');
+        await page.getByTestId('department-filter').selectOption('Finance');
+        await page.getByTestId('location-filter').selectOption('Remote (US & Canada)');
+
+        await expect(page.getByTestId('roles-grid')).toBeHidden();
+        await expect(page.getByTestId('role-filter-empty-state')).toBeVisible();
+        await expect(page.getByTestId('role-filter-empty-state')).toContainText(
+            'No roles match these filters',
+        );
+    });
+
     test('links through to a role detail page', async ({ page }) => {
         await page.goto('/');
         const firstCard = page.getByTestId('role-card').first();
