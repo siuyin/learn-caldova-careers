@@ -7,11 +7,32 @@
  */
 import type { Job } from '../types/job';
 
+/** Optional department and location selections used to narrow roles. */
+export interface JobFilters {
+  department?: string;
+  location?: string;
+}
+
+/** Minimum job fields needed by the department and location filter. */
+type FilterableJob = Pick<Job, 'department' | 'location'>;
+
+/** Return jobs matching every selected filter (does not mutate input). */
+export function filterJobs<T extends FilterableJob>(
+  jobs: T[],
+  filters: JobFilters = {},
+): T[] {
+  return jobs.filter(
+    (job) =>
+      (!filters.department || job.department === filters.department) &&
+      (!filters.location || job.location === filters.location),
+  );
+}
+
 /** Return jobs sorted by posted date, newest first (does not mutate input). */
 export function sortByNewest(jobs: Job[]): Job[] {
-    return [...jobs].sort(
-        (a, b) => new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime(),
-    );
+  return [...jobs].sort(
+    (a, b) => new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime(),
+  );
 }
 
 /**
@@ -19,14 +40,14 @@ export function sortByNewest(jobs: Job[]): Job[] {
  * e.g. "January 5, 2027". Falls back to the raw value if unparseable.
  */
 export function formatPostedDate(iso: string): string {
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) {
-        return iso;
-    }
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        timeZone: 'UTC',
-    });
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return iso;
+  }
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
 }
